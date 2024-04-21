@@ -52,7 +52,32 @@ public static class PartsManager
 
     public static async Task<Part> Add(string partName, string supplier, string partType)
     {
-        throw new NotImplementedException();
+        if (Connectivity.Current.NetworkAccess != NetworkAccess.Internet)
+            return new Part();
+        
+        var part = new Part()
+        {
+            PartName = partName,
+            Suppliers = new List<string>(new[] { supplier }),
+            PartID = string.Empty,
+            PartType = partType,
+            PartAvailableDate = DateTime.Now.Date
+        };
+        
+        var msg = new HttpRequestMessage(HttpMethod.Post, $"{Url}parts");
+        msg.Content = JsonContent.Create<Part>(part);
+        
+        var response = await client.SendAsync(msg);
+        response.EnsureSuccessStatusCode();
+        
+        var returnedJson = await response.Content.ReadAsStringAsync();
+
+        var insertedPart = JsonSerializer.Deserialize<Part>(returnedJson, new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true,
+        });
+        
+        return insertedPart;
     }
 
     public static async Task Update(Part part)
